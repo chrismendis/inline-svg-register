@@ -1,5 +1,5 @@
 {
-  "name": "svg-inliner-node-hook",
+  "name": "inline-svg-register",
   "version": "0.0.1",
   "description": "A node require() hook that adds inlining support for SVGs.",
   "main": "index.js",
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/bahmutov/node-hook"
+    "url": "https://github.com/chrismendis/inline-svg-register"
   },
   "keywords": [
     "node",
@@ -19,9 +19,7 @@
   "license": "ISC",
   "dependencies": {
     "babel-register": "^6.9.0",
-    "lodash": "^4.13.1",
-    "node-hook": "^0.4.0",
-    "really-need": "^1.9.2"
+    "lodash": "^4.13.1"
   },
   "devDependencies": {
     "tape": "^4.6.0"
