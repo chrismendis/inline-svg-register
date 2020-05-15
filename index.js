@@ -1,9 +1,10 @@
 cache = require("babel-register/lib/cache");
 each = require("lodash/each");
 fs = require("fs");
+const { addHook } = require('pirates')
 
 var EXTENSIONS = [".svg"];
-var oldHandlers = {};
+let piratesRevert = null;
 
 function normalizeString(source) {
   source = source.replace(/'/g, "\\'");
@@ -26,7 +27,7 @@ function mtime(filename) {
 }
 
 // Adapted from https://github.com/babel/babel/blob/master/packages/babel-register/src/node.js
-function compile(filename) {
+function compile(_code, filename) {
   var result, cached;
 
   var cacheKey = "svg-inliner-node-hook:" + filename;
@@ -39,7 +40,7 @@ function compile(filename) {
   if (cache) {
     cached = cache[cacheKey];
     if (cached && cached.mtime === mtime(filename)) {
-      result = cached;
+      result = cached.code;
     }
   }
 
@@ -55,48 +56,18 @@ function compile(filename) {
   return result.code;
 }
 
-// Ripped from https://github.com/babel/babel/blob/master/packages/babel-register/src/node.js
-function loader(m, filename) {
-  m._compile(compile(filename), filename);
-}
-
-// Adapted from https://github.com/babel/babel/blob/master/packages/babel-register/src/node.js
-function registerExtension(ext) {
-  require.extensions[ext] = function (m, filename) {
-    loader(m, filename);
-  };
-}
-
-// Ripped from https://github.com/babel/babel/blob/master/packages/babel-register/src/node.js
+// Ripped from https://github.com/babel/babel/pull/3670/files#diff-75a0292ed78043766c2d5564edd84ad2R80-R83
 function hookExtensions(_exts) {
-  each(oldHandlers, function (old, ext) {
-    if (old === undefined) {
-      delete require.extensions[ext];
-    } else {
-      require.extensions[ext] = old;
-    }
-  });
-
-  oldHandlers = {};
-
-  each(_exts, function (ext) {
-    oldHandlers[ext] = require.extensions[ext];
-    registerExtension(ext);
-  });
+  if (piratesRevert) piratesRevert();
+  piratesRevert = addHook(compile, { exts: _exts, ignoreNodeModules: true });
 }
 
-function unhookExtensions() {
-  each(oldHandlers, function (old, ext) {
-    if (old === undefined) {
-      delete require.extensions[ext];
-    } else {
-      require.extensions[ext] = old;
-    }
-  });
-
-  oldHandlers = null;
+// Ripped from https://github.com/babel/babel/pull/3670/files#diff-75a0292ed78043766c2d5564edd84ad2R80-R88
+function revert() {
+  if (piratesRevert) piratesRevert()
+  delete require.cache[require.resolve(__filename)]
 }
 
 hookExtensions(EXTENSIONS);
 
-module.exports = unhookExtensions;
+module.exports = revert;
